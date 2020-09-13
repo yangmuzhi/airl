@@ -1,8 +1,6 @@
 #!/usr/bin/python3
 from network_models import d_net, Policy_net
-from algo import Discriminator, PPO, GAIL_wrapper
-import numpy as np
-import tensorflow as tf
+from algo import Discriminator, PPO, AIRL_wrapper
 import gym
 import argparse
 
@@ -16,9 +14,9 @@ args = parser.parse_args()
 obs_dims = (4,)
 n_actions = 2
 
-agent = PPO(Policy_net, (4,), 2)
-D = Discriminator(obs_dims, n_actions)
+agent = PPO(args.savedir, Policy_net, (4,), 2)
+D = Discriminator(args.savedir, obs_dims, n_actions)
 env = gym.make("CartPole-v0")
-trainer = GAIL_wrapper(agent, D, env)
+trainer = AIRL_wrapper(agent, D, env, args.savedir)
 
-trainer.train(args.iters, args.savedir, args.logdir)
+trainer.train(args.iters)

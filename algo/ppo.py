@@ -13,8 +13,8 @@ class PPO(Base):
         :param c_2: parameter for entropy bonus
         """
 
-        self.Policy = Policy_net("policy", ob_space, act_space)
-        self.Old_Policy = Policy_net("old_policy", ob_space, act_space)
+        self.Policy = Policy_net("policy", *ob_space, act_space)
+        self.Old_Policy = Policy_net("old_policy", *ob_space, act_space)
         self.gamma = gamma
 
         pi_trainable = self.Policy.get_trainable_variables()

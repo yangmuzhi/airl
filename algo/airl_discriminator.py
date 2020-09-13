@@ -1,8 +1,9 @@
 import tensorflow as tf
+import numpy as np
 from .base import Base
 
 class Discriminator(Base):
-    def __init__(self, save_path, obs_dims, n_actions):
+    def __init__(self, save_path, obs_dims, n_actions, lr=1e-4):
         """
         :param env:
         Output of this Discriminator is reward for learning agent. Not the cost.
@@ -11,9 +12,9 @@ class Discriminator(Base):
         self.n_actions = n_actions
         with tf.variable_scope('discriminator'):
             self.scope = tf.get_variable_scope().name
-            self.state = tf.placeholder(dtype=tf.float32, shape=[None, obs_dims])
-            action = tf.placeholder(dtype=tf.float32, shape=[None])
-            self.action = tf.one_hot(self.action, depth=n_actions)
+            self.state = tf.placeholder(dtype=tf.float32, shape=[None, *obs_dims])
+            action = tf.placeholder(dtype=tf.int32, shape=[None])
+            self.action = tf.one_hot(action, depth=n_actions)
             self.state_action = tf.concat([self.state, self.action], axis=1)
 
             self.label = tf.placeholder(dtype=tf.int32, shape=[None, 1], name='label')
@@ -41,15 +42,17 @@ class Discriminator(Base):
     def train(self, expert_s, expert_a, agent_s, agent_a):
         state = np.concatenate([expert_s, agent_s])
         action = np.concatenate([expert_a, agent_a])
-        label = np.concatenate([np.ones([expert_a.shape[0], 1]), np.zeros([agent_a.shape[0], 1])])
+        action = to_categorical(action)
+        label = np.concatenate([np.ones([len(expert_a), 1]), np.zeros([len(agent_a), 1])])
+        # print("state shape: ", state.shape, "action shape: ", action.shape, "label shape: ", label.shape)
         return self.sess.run([self.train_op, self.loss], feed_dict={self.state: state, 
                                                          self.action: action, self.label: label})
 
 
     def get_rewards(self, agent_s, agent_a):
         agent_a = to_categorical(agent_a, self.n_actions)
-        return self.sess.run(self.rewards, feed_dict={self.agent_s: agent_s,
-                                                                     self.agent_a: agent_a})
+        return self.sess.run(self.rewards, feed_dict={self.state: agent_s,
+                                                                     self.action: agent_a})
 
     def get_trainable_variables(self):
         return tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, self.scope)
